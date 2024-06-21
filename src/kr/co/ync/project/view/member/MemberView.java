@@ -23,11 +23,14 @@ public class MemberView extends JFrame implements MemberListener {
 
     public MemberView(String title) {
         super(title);
-        JPanel jPanel = new JPanel(new GridLayout(1, 2));
+        setLayout(new BorderLayout());  // 레이아웃을 BorderLayout으로 변경
 
+        add(createSearchPanel(), BorderLayout.NORTH);  // 검색 패널을 상단에 추가
+        JPanel jPanel = new JPanel(new GridLayout(1, 2));
         jPanel.add(createLeftPanel());
         jPanel.add(createRightPanel());
-        add(jPanel);
+        add(jPanel, BorderLayout.CENTER);  // jPanel을 중앙에 추가
+
         MemberController.getInstance().addMemberListener(this);
         loadMembers();
         registerListeners();
@@ -132,5 +135,21 @@ public class MemberView extends JFrame implements MemberListener {
         Arrays.stream(fields).forEach(
                 field -> field.setText("")
         );
+    }
+
+    private JPanel createSearchPanel() {
+        JPanel searchPanel = new JPanel(new BorderLayout());  // 레이아웃을 BorderLayout으로 변경
+        JTextField searchField = new JTextField();  // 검색 필드의 크기를 지정하지 않음
+        JButton searchButton = new JButton("검색");
+
+        searchButton.addActionListener(e -> {
+            String keyword = searchField.getText();
+            // TODO: 입력된 검색어로 회원을 검색하고 결과를 테이블에 표시하는 코드를 작성하세요.
+        });
+
+        searchPanel.add(searchField, BorderLayout.CENTER);  // 검색 필드를 패널의 중앙에 추가
+        searchPanel.add(searchButton, BorderLayout.EAST);  // 검색 버튼을 패널의 동쪽에 추가
+
+        return searchPanel;
     }
 }
