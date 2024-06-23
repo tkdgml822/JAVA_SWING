@@ -13,23 +13,41 @@ import java.sql.SQLException;
 import java.util.Arrays;
 
 public class MemberView extends JFrame implements MemberListener {
-
     private final String[] labelTexts = {"이메일", "이름", "전화번호", "생년원일"};
     private JTextField[] fields;
     private JButton regButton;
     private DefaultTableModel defaultTableModel;
     private JTable jTable;
-    public static final Dimension SIZE = new Dimension(1000, 500);
+    public static final Dimension SIZE = new Dimension(1100, 500);
 
     public MemberView(String title) {
         super(title);
-        setLayout(new BorderLayout());  // 레이아웃을 BorderLayout으로 변경
+//        JPanel jPanel = new JPanel(new GridLayout(1, 3));
+        setLayout(new GridBagLayout());
 
-        add(createSearchPanel(), BorderLayout.NORTH);  // 검색 패널을 상단에 추가
-        JPanel jPanel = new JPanel(new GridLayout(1, 2));
-        jPanel.add(createLeftPanel());
-        jPanel.add(createRightPanel());
-        add(jPanel, BorderLayout.CENTER);  // jPanel을 중앙에 추가
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.fill = GridBagConstraints.BOTH;  // 가로 세로 모두 채우기
+
+        // 왼쪽 메뉴바
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.weightx = 0.01;  // 가로 비율 설정
+        gbc.weighty = 1;
+        add(createLeftMenuBar(), gbc);
+
+        // 왼쪽 패널
+        gbc.gridx = 1;
+        gbc.gridy = 0;
+        gbc.weightx = 1;  // 가로 비율 설정
+        gbc.weighty = 1;
+        add(createLeftPanel(), gbc);
+
+        // 오른쪽 패널
+        gbc.gridx = 2;
+        gbc.gridy = 0;
+        gbc.weightx = 1;  // 가로 비율 설정
+        gbc.weighty = 1;
+        add(createRightPanel(), gbc);
 
         MemberController.getInstance().addMemberListener(this);
         loadMembers();
@@ -80,6 +98,9 @@ public class MemberView extends JFrame implements MemberListener {
         jScrollPane.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         jTable.setFillsViewportHeight(true);
 
+        // JScrollPane의 크기를 조절
+        jScrollPane.setPreferredSize(new Dimension(20, 300));
+
         jPanel.add(jScrollPane, BorderLayout.CENTER);
 
         return jPanel;
@@ -116,6 +137,41 @@ public class MemberView extends JFrame implements MemberListener {
         return jPanel;
     }
 
+    public JPanel createLeftMenuBar() {
+        JPanel menuBar = new JPanel();
+        menuBar.setLayout(new GridLayout(4, 1));  // 4개의 버튼을 수직으로 배치
+
+        // 회원 등록 버튼
+        JButton registerButton = new JButton("회원 등록");
+        registerButton.addActionListener(e -> {
+            // TODO: 회원 등록 기능을 수행하는 코드를 작성하세요.
+        });
+        menuBar.add(registerButton);
+
+        // 회원 수정 버튼
+        JButton modifyButton = new JButton("회원 수정");
+        modifyButton.addActionListener(e -> {
+            // TODO: 회원 수정 기능을 수행하는 코드를 작성하세요.
+        });
+        menuBar.add(modifyButton);
+
+        // 회원 삭제 버튼
+        JButton deleteButton = new JButton("회원 삭제");
+        deleteButton.addActionListener(e -> {
+            // TODO: 회원 삭제 기능을 수행하는 코드를 작성하세요.
+        });
+        menuBar.add(deleteButton);
+
+        // 회원 조회 버튼
+        JButton searchButton = new JButton("회원 조회");
+        searchButton.addActionListener(e -> {
+            // TODO: 회원 조회 기능을 수행하는 코드를 작성하세요.
+        });
+        menuBar.add(searchButton);
+
+        return menuBar;
+    }
+
     public static void createShowGUI() {
         JFrame frame = new MemberView("2205052 회원관리 프로그램");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE); // 응용 프로그램도 같이 종료
@@ -135,21 +191,5 @@ public class MemberView extends JFrame implements MemberListener {
         Arrays.stream(fields).forEach(
                 field -> field.setText("")
         );
-    }
-
-    private JPanel createSearchPanel() {
-        JPanel searchPanel = new JPanel(new BorderLayout());  // 레이아웃을 BorderLayout으로 변경
-        JTextField searchField = new JTextField();  // 검색 필드의 크기를 지정하지 않음
-        JButton searchButton = new JButton("검색");
-
-        searchButton.addActionListener(e -> {
-            String keyword = searchField.getText();
-            // TODO: 입력된 검색어로 회원을 검색하고 결과를 테이블에 표시하는 코드를 작성하세요.
-        });
-
-        searchPanel.add(searchField, BorderLayout.CENTER);  // 검색 필드를 패널의 중앙에 추가
-        searchPanel.add(searchButton, BorderLayout.EAST);  // 검색 버튼을 패널의 동쪽에 추가
-
-        return searchPanel;
     }
 }
