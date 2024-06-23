@@ -18,12 +18,25 @@ public class MemberView extends JFrame implements MemberListener {
     private JButton regButton;
     private DefaultTableModel defaultTableModel;
     private JTable jTable;
+    private CardLayout cardLayout;
+    private JPanel contentPanel;
     public static final Dimension SIZE = new Dimension(1100, 500);
+
 
     public MemberView(String title) {
         super(title);
-//        JPanel jPanel = new JPanel(new GridLayout(1, 3));
         setLayout(new GridBagLayout());
+
+        // CardLayout을 사용하여 createLeftPanel과 createModifyPanel을 하나의 패널에 추가
+        cardLayout = new CardLayout();
+        contentPanel = new JPanel(cardLayout);
+        contentPanel.add(createLeftPanel(), "Register");
+        contentPanel.add(createModifyPanel(), "Modify");
+
+        // DefaultTableModel 초기화
+        defaultTableModel = new DefaultTableModel(new String[]{
+                "NO", "이메일", "이름", "전화번호", "생년원일", "가입일"
+        }, 0);
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.fill = GridBagConstraints.BOTH;  // 가로 세로 모두 채우기
@@ -48,6 +61,13 @@ public class MemberView extends JFrame implements MemberListener {
         gbc.weightx = 1;  // 가로 비율 설정
         gbc.weighty = 1;
         add(createRightPanel(), gbc);
+
+        // 왼쪽 패널
+        gbc.gridx = 1;
+        gbc.gridy = 0;
+        gbc.weightx = 1;  // 가로 비율 설정
+        gbc.weighty = 1;
+        add(contentPanel, gbc);  // contentPanel을 추가
 
         MemberController.getInstance().addMemberListener(this);
         loadMembers();
@@ -84,15 +104,21 @@ public class MemberView extends JFrame implements MemberListener {
                 )
         );
 
-        jPanel.setLayout(new BorderLayout());
-        JScrollPane jScrollPane = new JScrollPane();
-
-        defaultTableModel = new DefaultTableModel(new String[]{
-                "NO", "이메일", "이름", "전화번호", "생년원일", "가입일"
-        }, 0);
 
         jTable = new JTable(defaultTableModel);
         jTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+        jTable.getSelectionModel().addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting() && jTable.getSelectedRow() != -1) {
+                // 회원을 선택하면 해당 회원의 정보를 createModifyPanel의 필드에 채웁니다.
+                for (int i = 0; i < fields.length; i++) {
+                    fields[i].setText((String) jTable.getValueAt(jTable.getSelectedRow(), i + 1));
+                }
+                cardLayout.show(contentPanel, "Modify");
+            }
+        });
+
+        jPanel.setLayout(new BorderLayout());
+        JScrollPane jScrollPane = new JScrollPane();
 
         jScrollPane.setViewportView(jTable);
         jScrollPane.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
@@ -144,14 +170,14 @@ public class MemberView extends JFrame implements MemberListener {
         // 회원 등록 버튼
         JButton registerButton = new JButton("회원 등록");
         registerButton.addActionListener(e -> {
-            // TODO: 회원 등록 기능을 수행하는 코드를 작성하세요.
+            cardLayout.show(contentPanel, "Register");
         });
         menuBar.add(registerButton);
 
         // 회원 수정 버튼
         JButton modifyButton = new JButton("회원 수정");
         modifyButton.addActionListener(e -> {
-            // TODO: 회원 수정 기능을 수행하는 코드를 작성하세요.
+            cardLayout.show(contentPanel, "Modify");
         });
         menuBar.add(modifyButton);
 
@@ -170,6 +196,40 @@ public class MemberView extends JFrame implements MemberListener {
         menuBar.add(searchButton);
 
         return menuBar;
+    }
+
+    private JPanel createModifyPanel() {
+        fields = new JTextField[labelTexts.length];
+        JPanel jPanel = new JPanel();
+        jPanel.setLayout(null);
+
+        JPanel fieldPanel = new JPanel();
+        fieldPanel.setBounds(15, 6, 450, 185);
+        fieldPanel.setLayout(new GridLayout(4, 2, 5, 5));
+        fieldPanel.setBorder(
+            BorderFactory.createCompoundBorder(
+                    BorderFactory.createTitledBorder("회원수정"), BorderFactory.createEmptyBorder(5, 5, 5, 5)
+            )
+        );
+
+        // init
+        for (int i = 0; i < fields.length; i++) {
+            fields[i] = new JTextField();
+            JLabel jLabel = new JLabel(labelTexts[i], SwingConstants.LEFT);
+            fieldPanel.add(jLabel);
+            fieldPanel.add(fields[i]);
+        }
+
+        JButton modifyButton = new JButton("수정");
+        modifyButton.setBounds(15, 186, 450, 40);
+        modifyButton.addActionListener(e -> {
+            // TODO: 회원 정보를 수정하는 코드를 작성하세요.
+        });
+
+        jPanel.add(fieldPanel);
+        jPanel.add(modifyButton);
+
+        return jPanel;
     }
 
     public static void createShowGUI() {
