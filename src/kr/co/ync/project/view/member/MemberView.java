@@ -27,11 +27,14 @@ public class MemberView extends JFrame implements MemberListener {
         super(title);
         setLayout(new GridBagLayout());
 
-        // CardLayout을 사용하여 createLeftPanel과 createModifyPanel을 하나의 패널에 추가
+        // CardLayout을 사용하여 createLeftPanel, createModifyPanel, createDeletePanel, createSearchPanel을 하나의 패널에 추가
         cardLayout = new CardLayout();
         contentPanel = new JPanel(cardLayout);
-        contentPanel.add(createLeftPanel(), "Register");
-        contentPanel.add(createModifyPanel(), "Modify");
+        contentPanel.add(createLeftPanel(), "Register");  // 회원 가입 패널 추가
+        contentPanel.add(createModifyPanel(), "Modify");  // 회원 수정 패널 추가
+        contentPanel.add(createDeletePanel(), "Delete");  // 회원 삭제 패널 추가
+        contentPanel.add(createSearchPanel(), "Search");  // 회원 조회 패널 추가
+
 
         // DefaultTableModel 초기화
         defaultTableModel = new DefaultTableModel(new String[]{
@@ -184,14 +187,14 @@ public class MemberView extends JFrame implements MemberListener {
         // 회원 삭제 버튼
         JButton deleteButton = new JButton("회원 삭제");
         deleteButton.addActionListener(e -> {
-            // TODO: 회원 삭제 기능을 수행하는 코드를 작성하세요.
+            cardLayout.show(contentPanel, "Delete");  // 회원 삭제 패널을 보이도록 함
         });
         menuBar.add(deleteButton);
 
         // 회원 조회 버튼
         JButton searchButton = new JButton("회원 조회");
         searchButton.addActionListener(e -> {
-            // TODO: 회원 조회 기능을 수행하는 코드를 작성하세요.
+            cardLayout.show(contentPanel, "Search");  // 회원 조회 패널을 보이도록 함
         });
         menuBar.add(searchButton);
 
@@ -228,6 +231,55 @@ public class MemberView extends JFrame implements MemberListener {
 
         jPanel.add(fieldPanel);
         jPanel.add(modifyButton);
+
+        return jPanel;
+    }
+
+    private JPanel createDeletePanel() {
+        JPanel jPanel = new JPanel();
+        jPanel.setLayout(null);
+
+        JLabel emailLabel = new JLabel("이메일", SwingConstants.LEFT);
+        emailLabel.setBounds(15, 6, 450, 25);
+        jPanel.add(emailLabel);
+
+        JTextField emailField = new JTextField();
+        emailField.setBounds(15, 31, 450, 25);
+        jPanel.add(emailField);
+
+        JButton deleteButton = new JButton("삭제");
+        deleteButton.setBounds(15, 56, 450, 40);
+        deleteButton.addActionListener(e -> {
+            // TODO: 입력한 이메일을 가진 회원을 삭제하는 코드를 작성하세요.
+        });
+        jPanel.add(deleteButton);
+
+        return jPanel;
+    }
+
+    private JPanel createSearchPanel() {
+        JPanel jPanel = new JPanel();
+        jPanel.setLayout(null);
+
+        JLabel emailLabel = new JLabel("이메일", SwingConstants.LEFT);
+        emailLabel.setBounds(15, 6, 450, 25);
+        jPanel.add(emailLabel);
+
+        JTextField emailField = new JTextField();
+        emailField.setBounds(15, 31, 450, 25);
+        jPanel.add(emailField);
+
+        JButton searchButton = new JButton("조회");
+        searchButton.setBounds(15, 56, 450, 40);
+        searchButton.addActionListener(e -> {
+            // TODO: 입력한 이메일을 가진 회원을 조회하고, 조회 결과를 테이블에 표시하는 코드를 작성하세요.
+        });
+        jPanel.add(searchButton);
+
+        // 조회 결과를 보여주는 테이블
+        JTable resultTable = new JTable();
+        resultTable.setBounds(15, 96, 450, 200);
+        jPanel.add(resultTable);
 
         return jPanel;
     }
