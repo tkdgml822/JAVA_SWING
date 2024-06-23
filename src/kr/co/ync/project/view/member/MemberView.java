@@ -13,21 +13,65 @@ import java.sql.SQLException;
 import java.util.Arrays;
 
 public class MemberView extends JFrame implements MemberListener {
-
     private final String[] labelTexts = {"이메일", "이름", "전화번호", "생년원일"};
     private JTextField[] fields;
     private JButton regButton;
     private DefaultTableModel defaultTableModel;
     private JTable jTable;
-    public static final Dimension SIZE = new Dimension(1000, 500);
+    private CardLayout cardLayout;
+    private JPanel contentPanel;
+    public static final Dimension SIZE = new Dimension(1100, 500);
+
 
     public MemberView(String title) {
         super(title);
-        JPanel jPanel = new JPanel(new GridLayout(1, 2));
+        setLayout(new GridBagLayout());
 
-        jPanel.add(createLeftPanel());
-        jPanel.add(createRightPanel());
-        add(jPanel);
+        // CardLayout을 사용하여 createLeftPanel, createModifyPanel, createDeletePanel, createSearchPanel을 하나의 패널에 추가
+        cardLayout = new CardLayout();
+        contentPanel = new JPanel(cardLayout);
+        contentPanel.add(createLeftPanel(), "Register");  // 회원 가입 패널 추가
+        contentPanel.add(createModifyPanel(), "Modify");  // 회원 수정 패널 추가
+        contentPanel.add(createDeletePanel(), "Delete");  // 회원 삭제 패널 추가
+        contentPanel.add(createSearchPanel(), "Search");  // 회원 조회 패널 추가
+
+
+        // DefaultTableModel 초기화
+        defaultTableModel = new DefaultTableModel(new String[]{
+                "NO", "이메일", "이름", "전화번호", "생년원일", "가입일"
+        }, 0);
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.fill = GridBagConstraints.BOTH;  // 가로 세로 모두 채우기
+
+        // 왼쪽 메뉴바
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.weightx = 0.01;  // 가로 비율 설정
+        gbc.weighty = 1;
+        add(createLeftMenuBar(), gbc);
+
+        // 왼쪽 패널
+        gbc.gridx = 1;
+        gbc.gridy = 0;
+        gbc.weightx = 1;  // 가로 비율 설정
+        gbc.weighty = 1;
+        add(createLeftPanel(), gbc);
+
+        // 오른쪽 패널
+        gbc.gridx = 2;
+        gbc.gridy = 0;
+        gbc.weightx = 1;  // 가로 비율 설정
+        gbc.weighty = 1;
+        add(createRightPanel(), gbc);
+
+        // 왼쪽 패널
+        gbc.gridx = 1;
+        gbc.gridy = 0;
+        gbc.weightx = 1;  // 가로 비율 설정
+        gbc.weighty = 1;
+        add(contentPanel, gbc);  // contentPanel을 추가
+
         MemberController.getInstance().addMemberListener(this);
         loadMembers();
         registerListeners();
@@ -63,19 +107,28 @@ public class MemberView extends JFrame implements MemberListener {
                 )
         );
 
-        jPanel.setLayout(new BorderLayout());
-        JScrollPane jScrollPane = new JScrollPane();
-
-        defaultTableModel = new DefaultTableModel(new String[]{
-                "NO", "이메일", "이름", "전화번호", "생년원일", "가입일"
-        }, 0);
 
         jTable = new JTable(defaultTableModel);
         jTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+        jTable.getSelectionModel().addListSelectionListener(e -> {
+            if (!e.getValueIsAdjusting() && jTable.getSelectedRow() != -1) {
+                // 회원을 선택하면 해당 회원의 정보를 createModifyPanel의 필드에 채웁니다.
+                for (int i = 0; i < fields.length; i++) {
+                    fields[i].setText((String) jTable.getValueAt(jTable.getSelectedRow(), i + 1));
+                }
+                cardLayout.show(contentPanel, "Modify");
+            }
+        });
+
+        jPanel.setLayout(new BorderLayout());
+        JScrollPane jScrollPane = new JScrollPane();
 
         jScrollPane.setViewportView(jTable);
         jScrollPane.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         jTable.setFillsViewportHeight(true);
+
+        // JScrollPane의 크기를 조절
+        jScrollPane.setPreferredSize(new Dimension(20, 300));
 
         jPanel.add(jScrollPane, BorderLayout.CENTER);
 
@@ -109,6 +162,124 @@ public class MemberView extends JFrame implements MemberListener {
 
         jPanel.add(fieldPanel);
         jPanel.add(regButton);
+
+        return jPanel;
+    }
+
+    public JPanel createLeftMenuBar() {
+        JPanel menuBar = new JPanel();
+        menuBar.setLayout(new GridLayout(4, 1));  // 4개의 버튼을 수직으로 배치
+
+        // 회원 등록 버튼
+        JButton registerButton = new JButton("회원 등록");
+        registerButton.addActionListener(e -> {
+            cardLayout.show(contentPanel, "Register");
+        });
+        menuBar.add(registerButton);
+
+        // 회원 수정 버튼
+        JButton modifyButton = new JButton("회원 수정");
+        modifyButton.addActionListener(e -> {
+            cardLayout.show(contentPanel, "Modify");
+        });
+        menuBar.add(modifyButton);
+
+        // 회원 삭제 버튼
+        JButton deleteButton = new JButton("회원 삭제");
+        deleteButton.addActionListener(e -> {
+            cardLayout.show(contentPanel, "Delete");  // 회원 삭제 패널을 보이도록 함
+        });
+        menuBar.add(deleteButton);
+
+        // 회원 조회 버튼
+        JButton searchButton = new JButton("회원 조회");
+        searchButton.addActionListener(e -> {
+            cardLayout.show(contentPanel, "Search");  // 회원 조회 패널을 보이도록 함
+        });
+        menuBar.add(searchButton);
+
+        return menuBar;
+    }
+
+    private JPanel createModifyPanel() {
+        fields = new JTextField[labelTexts.length];
+        JPanel jPanel = new JPanel();
+        jPanel.setLayout(null);
+
+        JPanel fieldPanel = new JPanel();
+        fieldPanel.setBounds(15, 6, 450, 185);
+        fieldPanel.setLayout(new GridLayout(4, 2, 5, 5));
+        fieldPanel.setBorder(
+            BorderFactory.createCompoundBorder(
+                    BorderFactory.createTitledBorder("회원수정"), BorderFactory.createEmptyBorder(5, 5, 5, 5)
+            )
+        );
+
+        // init
+        for (int i = 0; i < fields.length; i++) {
+            fields[i] = new JTextField();
+            JLabel jLabel = new JLabel(labelTexts[i], SwingConstants.LEFT);
+            fieldPanel.add(jLabel);
+            fieldPanel.add(fields[i]);
+        }
+
+        JButton modifyButton = new JButton("수정");
+        modifyButton.setBounds(15, 186, 450, 40);
+        modifyButton.addActionListener(e -> {
+            // TODO: 회원 정보를 수정하는 코드를 작성하세요.
+        });
+
+        jPanel.add(fieldPanel);
+        jPanel.add(modifyButton);
+
+        return jPanel;
+    }
+
+    private JPanel createDeletePanel() {
+        JPanel jPanel = new JPanel();
+        jPanel.setLayout(null);
+
+        JLabel emailLabel = new JLabel("이메일", SwingConstants.LEFT);
+        emailLabel.setBounds(15, 6, 450, 25);
+        jPanel.add(emailLabel);
+
+        JTextField emailField = new JTextField();
+        emailField.setBounds(15, 31, 450, 25);
+        jPanel.add(emailField);
+
+        JButton deleteButton = new JButton("삭제");
+        deleteButton.setBounds(15, 56, 450, 40);
+        deleteButton.addActionListener(e -> {
+            // TODO: 입력한 이메일을 가진 회원을 삭제하는 코드를 작성하세요.
+        });
+        jPanel.add(deleteButton);
+
+        return jPanel;
+    }
+
+    private JPanel createSearchPanel() {
+        JPanel jPanel = new JPanel();
+        jPanel.setLayout(null);
+
+        JLabel emailLabel = new JLabel("이메일", SwingConstants.LEFT);
+        emailLabel.setBounds(15, 6, 450, 25);
+        jPanel.add(emailLabel);
+
+        JTextField emailField = new JTextField();
+        emailField.setBounds(15, 31, 450, 25);
+        jPanel.add(emailField);
+
+        JButton searchButton = new JButton("조회");
+        searchButton.setBounds(15, 56, 450, 40);
+        searchButton.addActionListener(e -> {
+            // TODO: 입력한 이메일을 가진 회원을 조회하고, 조회 결과를 테이블에 표시하는 코드를 작성하세요.
+        });
+        jPanel.add(searchButton);
+
+        // 조회 결과를 보여주는 테이블
+        JTable resultTable = new JTable();
+        resultTable.setBounds(15, 96, 450, 200);
+        jPanel.add(resultTable);
 
         return jPanel;
     }
