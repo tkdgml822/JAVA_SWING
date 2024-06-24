@@ -12,6 +12,9 @@ import java.util.List;
 public class MemberDaoImpl implements MemberDao {
     private static final String ALL = "SELECT * FROM tb_members";
     private static final String INSERT = "INSERT INTO tb_members (email, name, phone, birth, reg_date) VALUES (?, ?, ?, ?, ?)";
+    private static final String MODIFY = "UPDATE tb_members SET  name = ?, birth = ? WHERE id = ?";
+    private static final String DELETE = "DELETE FROM tb_members WHERE email = ?";
+    private static final String FIND_BY_EMAIL = "SELECT * FROM tb_members WHERE email = ?";
 
     @Override
     public List<Member> all() throws SQLException {
@@ -36,8 +39,8 @@ public class MemberDaoImpl implements MemberDao {
     public Member insert(Member member) throws SQLException {
         LocalDateTime now = LocalDateTime.now();
         try (
-                Connection c = DaoFactory.getDatabase().openConnection();
-                PreparedStatement pstmt = c.prepareStatement(INSERT, PreparedStatement.RETURN_GENERATED_KEYS)
+            Connection c = DaoFactory.getDatabase().openConnection();
+            PreparedStatement pstmt = c.prepareStatement(INSERT, PreparedStatement.RETURN_GENERATED_KEYS)
         ) {
             pstmt.setString(1, member.getEmail());
             pstmt.setString(2, member.getName());
@@ -60,6 +63,60 @@ public class MemberDaoImpl implements MemberDao {
         return member;
     }
 
+    @Override
+    public Member modify(Member member) throws SQLException {
+        try (
+            Connection c = DaoFactory.getDatabase().openConnection();
+            PreparedStatement pstmt = c.prepareStatement(MODIFY)
+        ) {
+            pstmt.setString(1, member.getName());
+            pstmt.setDate(2, Date.valueOf(member.getBirth()));
+            pstmt.setLong(3, member.getId());
+
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return member;
+    }
+    @Override
+    public Member delete(Member member) throws SQLException {
+        try (
+                Connection c = DaoFactory.getDatabase().openConnection();
+                PreparedStatement pstmt = c.prepareStatement(DELETE)
+        ) {
+            pstmt.setString(1, member.getEmail());
+
+            pstmt.executeUpdate();
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return member;
+    }
+
+    @Override
+    public Member findByEmail(String email) throws SQLException {
+        Member member = null;
+
+        try (
+                Connection c = DaoFactory.getDatabase().openConnection();
+                PreparedStatement pstmt = c.prepareStatement(FIND_BY_EMAIL)
+        ) {
+            pstmt.setString(1, email);
+
+            try (ResultSet rset = pstmt.executeQuery()) {
+                if (rset.next()) {
+                    member = createMember(rset);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return member;
+    }
 
     private Member createMember(ResultSet resultSet) throws SQLException {
         Member member = new Member();
