@@ -5,6 +5,6 @@ import java.util.List;
 
 public interface MemberListener {
     void register(MemberEvent memberEvent); // C
-
-
+    void modify(MemberEvent memberEvent); // U
+    void delete(MemberEvent memberEvent); // D
 }
