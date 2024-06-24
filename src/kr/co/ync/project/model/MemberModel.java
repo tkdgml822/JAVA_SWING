@@ -24,6 +24,18 @@ public class MemberModel {
         memberDao().insert(member);
     }
 
+    public void update(Member member) throws SQLException {
+        memberDao().modify(member);
+    }
+
+    public void delete(Member member) throws SQLException {
+        memberDao().delete(member);
+    }
+
+    public Member findByEmail(String email) throws SQLException {
+        return memberDao().findByEmail(email);
+    }
+
     private static MemberDao memberDao() {
         return DaoFactory.getDatabase().getMemberDao();
     }
