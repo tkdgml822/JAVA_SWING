@@ -17,9 +17,9 @@ public class MemberView extends JFrame implements MemberListener {
     private final String[] labelTexts = {"이메일", "이름", "전화번호", "생년원일"};
     private JTextField[] registerFields, modifyFields;
     private JTextField emailField;
-    private JButton regButton, modifyButton, deleteButton;
+    private JButton regButton, modifyButton, deleteButton, searchButton;
+    private JTable jTable, searchResultTable;
     private DefaultTableModel defaultTableModel;
-    private JTable jTable;
     private CardLayout cardLayout;
     private JPanel contentPanel;
     public static final Dimension SIZE = new Dimension(1100, 500);
@@ -124,6 +124,25 @@ public class MemberView extends JFrame implements MemberListener {
                 }
             }).start();
         });
+    }
+
+    private void searchMember() {
+        searchButton.addActionListener(e -> {
+            String email = emailField.getText();
+            if (email.isEmpty()) {
+                SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this, "이메일을 입력해주세요."));
+            } else {
+                Member member = MemberController.getInstance().findByEmail(email);
+                if (member != null) {
+                    MemberController.getInstance().delete(member);
+                    refreshMemberList();  // 회원 목록 새로고침
+                    SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this, "회원이 삭제되었습니다."));
+                } else {
+                    SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this, "해당 이메일을 가진 회원이 없습니다."));
+                }
+            }
+        });
+
     }
 
     private void loadMembers() {
@@ -266,21 +285,19 @@ public class MemberView extends JFrame implements MemberListener {
         emailLabel.setBounds(15, 6, 450, 25);
         jPanel.add(emailLabel);
 
-        JTextField emailField = new JTextField();
+        emailField = new JTextField();
         emailField.setBounds(15, 31, 450, 25);
         jPanel.add(emailField);
 
-        JButton searchButton = new JButton("조회");
+        searchButton = new JButton("조회");
         searchButton.setBounds(15, 56, 450, 40);
-        searchButton.addActionListener(e -> {
-            // TODO: 입력한 이메일을 가진 회원을 조회하고, 조회 결과를 테이블에 표시하는 코드를 작성하세요.
-        });
+
         jPanel.add(searchButton);
 
         // 조회 결과를 보여주는 테이블
-        JTable resultTable = new JTable();
-        resultTable.setBounds(15, 96, 450, 200);
-        jPanel.add(resultTable);
+        searchResultTable = new JTable();
+        searchResultTable.setBounds(15, 96, 450, 200);
+        jPanel.add(searchResultTable);
 
         return jPanel;
     }
