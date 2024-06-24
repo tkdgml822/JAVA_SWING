@@ -21,6 +21,13 @@ public class Member {
         this.birth = birth;
     }
 
+    // modify에서 사용하는 생성자
+    public Member(Long id, String name, LocalDate birth) {
+        this.id = id;
+        this.name = name;
+        this.birth = birth;
+    }
+
 
     public Long getId() {
         return id;
@@ -72,9 +79,9 @@ public class Member {
 
     public String[] toArray() {
         return new String[] {
-                this.id.toString(), this.email,
-                this.name, this.phone, this.birth.toString(),
-                this.regDate.toString()
+            this.id.toString(), this.email,
+            this.name, this.phone, this.birth.toString(),
+            this.regDate.toString()
         };
     }
 }
