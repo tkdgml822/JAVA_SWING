@@ -10,19 +10,23 @@ import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.sql.SQLException;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.Arrays;
 import java.util.List;
 
 public class MemberView extends JFrame implements MemberListener {
     private final String[] labelTexts = {"이메일", "이름", "전화번호", "생년원일"};
     private JTextField[] registerFields, modifyFields;
-    private JTextField emailField;
+    private JTextField deleteEmailField, searchEmailField;
     private JButton regButton, modifyButton, deleteButton, searchButton;
     private JTable jTable, searchResultTable;
     private DefaultTableModel defaultTableModel;
     private CardLayout cardLayout;
     private JPanel contentPanel;
     public static final Dimension SIZE = new Dimension(1100, 500);
+    private Thread deleteThread;
 
 
     public MemberView(String title) {
@@ -67,22 +71,61 @@ public class MemberView extends JFrame implements MemberListener {
         add(createRightPanel(), gbc);
 
         MemberController.getInstance().addMemberListener(this);
-        loadMembers();
-        registerListeners();
-        modifyMember();
-        deleteMember();
+        loadMembers(); // 전체 회원 추가
+        registerListeners(); // 추가 이벤트
+        modifyMember(); // 수정 이벤트
+        deleteMember(); // 삭제 이벤트
+        searchMember(); // 검색 이벤트
     }
+
 
     // 회원 등록 누르면 발생되는 이벤트
     private void registerListeners() {
         regButton.addActionListener(e -> {
-            Member member = new Member(
-                    registerFields[0].getText(), // 이메일
-                    registerFields[1].getText(), // 이름
-                    registerFields[2].getText(), // 전화번호
-                    Util.strToLocalDate(registerFields[3].getText()) // 생년원일
-            );
-            MemberController.getInstance().save(member);
+            String emailStr = registerFields[0].getText(); // 이메일
+            String nameStr = registerFields[1].getText(); // 이름
+            String phoneStr = registerFields[2].getText(); // 전화번호
+            String birthDateStr = registerFields[3].getText(); // 생년월일
+
+            // 이메일, 핸드폰 중복 검색
+            if (MemberController.getInstance().findByPhone(phoneStr) != null) {
+                JOptionPane.showMessageDialog(this, "이미 가입된 전화번호입니다.");
+            } else if (MemberController.getInstance().findByEmail(emailStr) != null) {
+                JOptionPane.showMessageDialog(this, "이미 가입된 이메일입니다.");
+            }
+
+            // 필드 입력안했을시
+            if (emailStr.isEmpty() || nameStr.isEmpty() || phoneStr.isEmpty() || birthDateStr.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "모든 필드를 입력해주세요.");
+            }
+            // 이메일 형식 검증
+            String emailPattern = "^[\\w!#$%&'*+/=?`{|}~^-]+(?:\\.[\\w!#$%&'*+/=?`{|}~^-]+)*@(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,6}$";
+            if (!emailStr.matches(emailPattern)) {
+                JOptionPane.showMessageDialog(this, "유효하지 않은 이메일 형식입니다.");
+            } // 전화번호 형식 검증
+            else if (!phoneStr.matches("\\d+")) {
+                JOptionPane.showMessageDialog(this, "전화번호는 숫자만 입력해주세요.");
+            } // 이름 형식 검증
+            else if (!nameStr.matches("[a-zA-Z가-힣]*")) {
+                JOptionPane.showMessageDialog(this, "이름에는 알파벳과 한글만 사용할 수 있습니다.");
+            } // 생일 형식 검증
+            else if (!birthDateStr.matches("\\d{4}-\\d{2}-\\d{2}")) {
+                JOptionPane.showMessageDialog(this, "생년월일은 yyyy-MM-dd 형식으로 입력해주세요.");
+            } else {
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+                try {
+                    LocalDate.parse(birthDateStr, formatter); // 날짜 형식 검증
+                    Member member = new Member(
+                            registerFields[0].getText(), // 이메일
+                            registerFields[1].getText(), // 이름
+                            registerFields[2].getText(), // 전화번호
+                            Util.strToLocalDate(birthDateStr) // 생년월일
+                    );
+                    MemberController.getInstance().save(member);
+                } catch (DateTimeParseException ex) {
+                    JOptionPane.showMessageDialog(this, "생년월일은 유효한 날짜가 아닙니다.");
+                }
+            }
         });
     }
 
@@ -91,58 +134,110 @@ public class MemberView extends JFrame implements MemberListener {
         modifyButton.addActionListener(e -> {
             int selectedRow = jTable.getSelectedRow();
             if (selectedRow != -1) {
-                // 테이블에서 선택된 행의 ID를 가져옵니다.
-                Long id = Long.valueOf((String) jTable.getValueAt(selectedRow, 0));
-                Member member = new Member(
-                        id, // ID
-                        modifyFields[1].getText(), // 이름
-                        Util.strToLocalDate(modifyFields[3].getText()) // 생년원일
-                );
-                MemberController.getInstance().modify(member);
-                refreshMemberList();
+                String nameStr = modifyFields[1].getText(); // 이름
+                String birthDateStr = modifyFields[3].getText(); // 생년월일
+                
+                // 이름이나 생년월일 필드가 비어있는 경우
+                if (nameStr.isEmpty() || birthDateStr.isEmpty()) {
+                    JOptionPane.showMessageDialog(this, "이름과 생년월일을 모두 입력해주세요.");
+                    return;
+                }
+
+                // 이름 형식 검증
+                if (!nameStr.matches("[a-zA-Z가-힣]*")) {
+                    JOptionPane.showMessageDialog(this, "이름에는 알파벳과 한글만 사용할 수 있습니다.");
+                } // 생일 형식 검증
+                else if (!birthDateStr.matches("\\d{4}-\\d{2}-\\d{2}")) {
+                    JOptionPane.showMessageDialog(this, "생년월일은 yyyy-MM-dd 형식으로 입력해주세요.");
+                } else {
+                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+                    try {
+                        LocalDate.parse(birthDateStr, formatter); // 날짜 형식 검증
+                        // 테이블에서 선택된 행의 ID를 가져옵니다.
+                        Long id = Long.valueOf((String) jTable.getValueAt(selectedRow, 0));
+                        Member member = new Member(
+                                id, // ID
+                                modifyFields[1].getText(), // 이름
+                                Util.strToLocalDate(modifyFields[3].getText()) // 생년원일
+                        );
+                        MemberController.getInstance().modify(member);
+                        refreshMemberList();
+                    } catch (DateTimeParseException ex) {
+                        JOptionPane.showMessageDialog(this, "생년월일은 유효한 날짜가 아닙니다.");
+                    }
+                }
             } else {
                 JOptionPane.showMessageDialog(this, "수정할 회원을 선택해주세요.");
             }
             clearMemberFields();
         });
     }
+
+
     private void deleteMember() {
         deleteButton.addActionListener(e -> {
-            new Thread(() -> {
-                String email = emailField.getText();
-                if (email.isEmpty()) {
-                    SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this, "이메일을 입력해주세요."));
-                } else {
-                    Member member = MemberController.getInstance().findByEmail(email);
-                    if (member != null) {
-                        MemberController.getInstance().delete(member);
-                        refreshMemberList();  // 회원 목록 새로고침
-                        SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this, "회원이 삭제되었습니다."));
-                    } else {
-                        SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this, "해당 이메일을 가진 회원이 없습니다."));
+            String email = deleteEmailField.getText();
+            System.out.println("Email: " + email);
+            if (email.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "이메일을 입력해주세요.");
+            } else {
+                Member member = MemberController.getInstance().findByEmail(email);
+                if (member != null) {
+                    int confirm = JOptionPane.showConfirmDialog(this, "정말로 회원을 삭제하시겠습니까?", "회원 삭제", JOptionPane.YES_NO_OPTION);
+                    if (confirm == JOptionPane.YES_OPTION) {
+                        new SwingWorker<Void, Void>() {
+                            @Override
+                            protected Void doInBackground() throws Exception {
+                                MemberController.getInstance().delete(member);
+                                return null;
+                            }
+
+                            @Override
+                            protected void done() {
+                                JOptionPane.showMessageDialog(MemberView.this, "회원이 삭제되었습니다.");
+                                // 회원 목록에서 해당 회원 제거
+                                for (int i = 0; i < defaultTableModel.getRowCount(); i++) {
+                                    if (defaultTableModel.getValueAt(i, 1).equals(email)) {
+                                        defaultTableModel.removeRow(i);
+                                        break;
+                                    }
+                                }
+                            }
+                        }.execute();
                     }
+                } else {
+                    JOptionPane.showMessageDialog(this, "해당 이메일을 가진 회원이 없습니다.");
                 }
-            }).start();
+            }
         });
+    }
+
+
+
+    // 필요한 경우에 스레드를 인터럽트하는 메소드
+    public void interruptDeleteThread() {
+        if (deleteThread != null && deleteThread.isAlive()) {
+            deleteThread.interrupt();
+        }
     }
 
     private void searchMember() {
         searchButton.addActionListener(e -> {
-            String email = emailField.getText();
+            String email = searchEmailField.getText();
             if (email.isEmpty()) {
                 SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this, "이메일을 입력해주세요."));
             } else {
                 Member member = MemberController.getInstance().findByEmail(email);
                 if (member != null) {
-                    MemberController.getInstance().delete(member);
-                    refreshMemberList();  // 회원 목록 새로고침
-                    SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this, "회원이 삭제되었습니다."));
+                    DefaultTableModel model = (DefaultTableModel) searchResultTable.getModel();
+                    model.setRowCount(0); // 테이블 초기화
+                    model.addRow(member.toArray()); // 검색 결과 추가
+                    SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this, "회원이 검색되었습니다."));
                 } else {
                     SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this, "해당 이메일을 가진 회원이 없습니다."));
                 }
             }
         });
-
     }
 
     private void loadMembers() {
@@ -265,9 +360,9 @@ public class MemberView extends JFrame implements MemberListener {
         emailLabel.setBounds(15, 6, 450, 25);
         jPanel.add(emailLabel);
 
-        emailField = new JTextField();
-        emailField.setBounds(15, 31, 450, 25);
-        jPanel.add(emailField);
+        deleteEmailField = new JTextField();
+        deleteEmailField.setBounds(15, 31, 450, 25);
+        jPanel.add(deleteEmailField);
 
         deleteButton = new JButton("삭제");
         deleteButton.setBounds(15, 56, 450, 40);
@@ -285,9 +380,9 @@ public class MemberView extends JFrame implements MemberListener {
         emailLabel.setBounds(15, 6, 450, 25);
         jPanel.add(emailLabel);
 
-        emailField = new JTextField();
-        emailField.setBounds(15, 31, 450, 25);
-        jPanel.add(emailField);
+        searchEmailField = new JTextField();
+        searchEmailField.setBounds(15, 31, 450, 25);
+        jPanel.add(searchEmailField);
 
         searchButton = new JButton("조회");
         searchButton.setBounds(15, 56, 450, 40);
@@ -295,7 +390,10 @@ public class MemberView extends JFrame implements MemberListener {
         jPanel.add(searchButton);
 
         // 조회 결과를 보여주는 테이블
-        searchResultTable = new JTable();
+        DefaultTableModel searchResultModel = new DefaultTableModel(new String[]{
+                "NO", "이메일", "이름", "전화번호", "생년원일", "가입일"
+        }, 0);
+        searchResultTable = new JTable(searchResultModel);
         searchResultTable.setBounds(15, 96, 450, 200);
         jPanel.add(searchResultTable);
 
@@ -325,6 +423,7 @@ public class MemberView extends JFrame implements MemberListener {
         // 회원 삭제 버튼
         JButton deleteButton = new JButton("회원 삭제");
         deleteButton.addActionListener(e -> {
+            clearMemberFields();
             cardLayout.show(contentPanel, "Delete");  // 회원 삭제 패널을 보이도록 함
         });
         menuBar.add(deleteButton);
@@ -389,7 +488,7 @@ public class MemberView extends JFrame implements MemberListener {
         } else if ("Modify".equals(currentPanel)) {
             Arrays.stream(modifyFields).forEach(field -> field.setText(""));
         } else if ("Delete".equals(currentPanel)) {
-            emailField.setText("");
+            deleteEmailField.setText("");
         }
     }
 
@@ -403,7 +502,9 @@ public class MemberView extends JFrame implements MemberListener {
 
             // 새로운 회원 정보를 테이블에 추가합니다.
             for (Member member : members) {
-                defaultTableModel.insertRow(0, member.toArray());
+                if (member != null && member.toArray().length == defaultTableModel.getColumnCount()) {
+                    defaultTableModel.insertRow(0, member.toArray());
+                }
             }
 
             // 테이블의 레이아웃과 그래픽을 갱신합니다.
@@ -411,6 +512,7 @@ public class MemberView extends JFrame implements MemberListener {
             jTable.repaint();
         } catch (SQLException e) {
             // 데이터베이스 에러 처리
+            System.err.println("Error refreshing member list: " + e.getMessage());
         }
     }
 }
