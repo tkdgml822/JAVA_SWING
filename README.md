@@ -1,11 +1,1 @@
-# 추가 기능
-
-## 회원 검색 기능 
-이름, 이메일, 전화번호 등으로 회원을 검색하는 기능을 추가할 수 있습니다. 이를 위해 MemberDao 인터페이스에 검색 메소드를 추가하고, 이를 구현하는 MemberDaoImpl 클래스에 해당 메소드를 구현
-
-## 회원 정보 수정 기능 
-현재 회원 정보를 등록하는 기능만 있지만, 등록된 회원 정보를 수정하는 기능을 추가할 수 있습니다. 이를 위해 MemberDao 인터페이스에 수정 메소드를 추가하고, 이를 구현하는 MemberDaoImpl 클래스에 해당 메소드를 구현  
-
-## 회원 삭제 기능
-등록된 회원 정보를 삭제하는 기능을 추가할 수 있습니다. 이를 위해 MemberDao 인터페이스에 삭제 메소드를 추가하고, 이를 구현하는 MemberDaoImpl 클래스에 해당 메소드를 구현해야 합니다.
-
+![JavaSwingProject_2205052_images.1.jpeg](..%2FJavaSwingProject_2205052_images%2FJavaSwingProject_2205052_images.1.jpeg)
