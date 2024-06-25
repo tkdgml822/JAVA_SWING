@@ -36,8 +36,12 @@ public class MemberModel {
         return memberDao().findByEmail(email);
     }
 
+    public Member findByPhoneNumber(String phoneNumber) throws SQLException {
+        return memberDao().findByPhoneNumber(phoneNumber);
+    }
     private static MemberDao memberDao() {
         return DaoFactory.getDatabase().getMemberDao();
     }
+
 
 }
