@@ -11,4 +11,5 @@ public interface MemberDao {
     Member modify(Member member) throws SQLException;
     Member delete(Member member) throws SQLException;
     Member findByEmail(String email) throws SQLException;
+    Member findByPhoneNumber(String phoneNumber) throws SQLException;
 }
