@@ -15,6 +15,7 @@ public class MemberDaoImpl implements MemberDao {
     private static final String MODIFY = "UPDATE tb_members SET  name = ?, birth = ? WHERE id = ?";
     private static final String DELETE = "DELETE FROM tb_members WHERE email = ?";
     private static final String FIND_BY_EMAIL = "SELECT * FROM tb_members WHERE email = ?";
+    private final String FIND_BY_PHONE = "SELECT * FROM tb_members WHERE phone = ?";
 
     @Override
     public List<Member> all() throws SQLException {
@@ -105,6 +106,28 @@ public class MemberDaoImpl implements MemberDao {
                 PreparedStatement pstmt = c.prepareStatement(FIND_BY_EMAIL)
         ) {
             pstmt.setString(1, email);
+
+            try (ResultSet rset = pstmt.executeQuery()) {
+                if (rset.next()) {
+                    member = createMember(rset);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return member;
+    }
+
+    @Override
+    public Member findByPhoneNumber(String phoneNumber) throws SQLException {
+        Member member = null;
+
+        try (
+                Connection c = DaoFactory.getDatabase().openConnection();
+                PreparedStatement pstmt = c.prepareStatement(FIND_BY_PHONE)
+        ) {
+            pstmt.setString(1, phoneNumber);
 
             try (ResultSet rset = pstmt.executeQuery()) {
                 if (rset.next()) {
